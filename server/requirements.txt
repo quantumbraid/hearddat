@@ -1,0 +1,7 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+pystray==0.19.5
+Pillow==10.4.0
+websockets==12.0
+opuslib==3.0.1
+pytest==8.3.2

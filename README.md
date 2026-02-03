@@ -28,6 +28,36 @@ See [`TODO.md`](./TODO.md) for a structured, checkbox-based plan.
 - `shared/`: Shared protocol specs, utilities, and test fixtures
 - `tools/`: Maintenance scripts (including repository snapshot tooling)
 
+## PC server (Phase 2 prototype)
+
+The desktop server is implemented in `server/` using FastAPI + Uvicorn. It
+exposes HTTP + WebSocket endpoints on ports **80** (unsecured) and **81**
+(TLS). The TLS certificate is a local dev certificate stored in
+`server/certs/`.
+
+### Quick start
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r server/requirements.txt
+python -m server.main --no-tray
+```
+
+### Key endpoints
+
+- `GET /pair` — LAN-only pairing page.
+- `POST /v1/pairing/request` — generate a short-lived pairing token.
+- `POST /v1/pairing/confirm` — confirm a pairing token.
+- `GET /v1/health` — extension health check.
+- `GET /v1/devices` — list paired devices.
+- `WS /ws/audio/<channel>/ingest` — ingest audio.
+- `WS /ws/audio/<channel>` — consume audio.
+- `WS /ws/device/<device_id>?token=...` — device notification channel.
+
+See [`shared/protocol.md`](./shared/protocol.md) for the full Phase 1 protocol
+details.
+
 ## Snapshot script
 
 Use `tools/god_snapshot.py` to capture a text-only snapshot of the repo into
