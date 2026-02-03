@@ -7,9 +7,9 @@
 - [x] Add repository snapshot tooling for end-of-job archive (`tools/god_snapshot.py`).
 
 ## Phase 1 — Protocol & security design
-- [ ] Define the pairing protocol (QR payload structure, auth handshake, token rotation).
+- [ ] Define the pairing protocol (QR payload structure, auth handshake, token rotation). QR directs to a local .html page that is largely boilerplate from \AuthPair\index.html. because this requires the same network to pair, trust is assumed. the first time the user opens the android app, they will be told to use vpn or proxy if security is a concern. the app will be the only way to connect to the qr code, so it will need camera and qr scan. once the phone is paired to the pc with a token that is only ever established in same local network they do not exchange keys, but instead under secure mode will transmit encrypted over 81 and unsecured on port 80, this is not through webview or android browser. this is a tool that simply transmits audio streams and triggers record functions of websites for voice interactions. The pc server will run with a taskbar icon, right click will have a menu, start server, stop server, restart server, reconnect to device, devices, restart service after clearing temp files. if the user hovers on devices there is a submenu that shows all connected devices, clicking any device requires it to reauthenticate on local lan.
 - [ ] Define the audio streaming protocol (transport, codec, buffering, reconnection).
-- [ ] Document security model (encryption, threat model, trusted device revocation).
+- [x] Document security model (encryption, threat model, trusted device revocation). covered above.
 
 ## Phase 2 — PC server (desktop)
 - [ ] Choose runtime/stack and create server skeleton (HTTP + WebSocket + discovery).
