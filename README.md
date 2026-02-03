@@ -26,6 +26,14 @@ See [`TODO.md`](./TODO.md) for a structured, checkbox-based plan.
 - `extensions/chrome/`: Chrome extension
 - `extensions/firefox/`: Firefox extension
 - `shared/`: Shared protocol specs, utilities, and test fixtures
+- `tools/`: Maintenance scripts (including repository snapshot tooling)
+
+## Snapshot script
+
+Use `tools/god_snapshot.py` to capture a text-only snapshot of the repo into
+`book/<timestamp>/god.txt`. The script excludes `book/`, dotfiles, git-ignored
+paths, and common binary formats. It can also restore a repository when run with
+the path to a `god.txt` file.
 
 ## Notes
 
