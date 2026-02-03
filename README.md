@@ -35,6 +35,19 @@ exposes HTTP + WebSocket endpoints on ports **80** (unsecured) and **81**
 (TLS). The TLS certificate is a local dev certificate stored in
 `server/certs/`.
 
+### Installer + tray UX (planned)
+
+- Distribute a Windows installer as an executable file whenever possible.
+- The installer should fetch/install dependencies when needed and applicable.
+- At install completion, prompt whether to:
+  - start the server when Windows starts, and
+  - start the server immediately after install.
+- The taskbar icon right-click menu will include a **Settings & Diagnostics**
+  entry that opens a local web page served by the PC server.
+- The local page will surface run statistics and allow the user to increase or
+  decrease the audio quality stream; encoding style selection will be added in a
+  future update.
+
 ### Quick start
 
 ```bash
@@ -69,3 +82,10 @@ the path to a `god.txt` file.
 
 - This repository currently contains planning artifacts and contracts to guide implementation.
 - As we build each component, we will expand the folders listed above.
+
+## Current project philosophy
+
+We will prioritize getting audio to successfully stream between the phone and
+computer (both directions) and between the phone and browser audio before
+focusing on individual site integrations. Once audio communication is stable,
+we will refine per-site behaviors and UX details for supported web apps.
