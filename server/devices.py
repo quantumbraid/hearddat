@@ -40,3 +40,9 @@ class DeviceHub:
             device = self._devices.get(device_id)
         if device:
             await device.websocket.send_json(payload)
+
+    async def count(self) -> int:
+        """Return the number of connected devices."""
+
+        async with self._lock:
+            return len(self._devices)

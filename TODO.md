@@ -35,15 +35,15 @@
 - [x] Implement dual-port listener: port 80 (unsecured) and port 81 (secure/encrypted) for audio streams.
 - [x] Add taskbar icon with right-click menu: start server, stop server, restart server, reconnect to device, devices submenu, restart service after clearing temp files.
 - [x] Implement devices submenu with per-device reauthentication requirement on local LAN when clicked.
-- [ ] Build a Windows installer (preferably an executable) for the PC server.
+- [x] Build a Windows installer (preferably an executable) for the PC server.
 - [ ] Ensure the installer fetches/installs dependencies when needed and applicable.
-- [ ] Add installer completion prompts:
-  - [ ] Ask whether the server should start when Windows starts.
-  - [ ] Ask whether to start the server immediately after install.
-- [ ] Add a right-click menu item to open Settings & Diagnostics.
-- [ ] Serve a local Settings & Diagnostics web page populated with run statistics.
-- [ ] Add UI controls to increase/decrease audio quality stream.
-- [ ] Leave a placeholder for future audio encoding style selection (documented as future update).
+- [x] Add installer completion prompts:
+  - [x] Ask whether the server should start when Windows starts.
+  - [x] Ask whether to start the server immediately after install.
+- [x] Add a right-click menu item to open Settings & Diagnostics.
+- [x] Serve a local Settings & Diagnostics web page populated with run statistics.
+- [x] Add UI controls to increase/decrease audio quality stream.
+- [x] Leave a placeholder for future audio encoding style selection (documented as future update).
 
 ## Phase 3 — Android app
 - [ ] Create Android project skeleton with background service permissions.

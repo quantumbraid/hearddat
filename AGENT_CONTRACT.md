@@ -9,6 +9,7 @@ This contract documents working agreements for implementing HeardDat.
 - Add human-readable comments in code paths that handle audio routing, pairing, and security.
 - Keep security and privacy considerations documented alongside implementation.
 - Avoid committing binary artifacts.
+- When adding new dependencies, update the Windows installer to include them if required.
 
 ## Deliverables
 - PC server, Android client, Chrome extension, and Firefox extension.

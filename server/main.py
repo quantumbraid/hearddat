@@ -15,7 +15,9 @@ from .devices import DeviceHub
 from .discovery import DiscoveryResponder
 from .ip_monitor import IPMonitor
 from .pairing import PairingRegistry
+from .quality import AudioQualityState
 from .storage import JsonStore
+from .stats import RuntimeStats
 from .tray import TrayApp
 from .web import build_app
 
@@ -32,6 +34,8 @@ class ServerRuntime:
         self._device_hub = DeviceHub()
         self._store = JsonStore(config.data_dir / "pairings.json")
         self._pairing = PairingRegistry(self._store)
+        self._stats = RuntimeStats()
+        self._quality = AudioQualityState()
         self._http_thread: threading.Thread | None = None
         self._https_thread: threading.Thread | None = None
         self._discovery: DiscoveryResponder | None = None
@@ -43,6 +47,8 @@ class ServerRuntime:
             self._pairing,
             self._router,
             self._device_hub,
+            self._stats,
+            self._quality,
             self.config.host,
             self.config.http_port,
         )
@@ -83,6 +89,15 @@ class ServerRuntime:
                 device_id, {"type": "reauth_required", "reason": "user_selected"}
             )
         )
+
+    def open_settings(self) -> None:
+        """Open the local settings & diagnostics page."""
+
+        import webbrowser
+
+        url = f"http://127.0.0.1:{self.config.http_port}/settings"
+        logger.info("Opening settings page at %s", url)
+        webbrowser.open(url)
 
     def _start_discovery(self) -> None:
         payload = {
@@ -143,6 +158,7 @@ def build_tray(runtime: ServerRuntime) -> TrayApp:
         on_clear_restart=runtime.clear_and_restart,
         list_devices=runtime.list_devices,
         on_device_select=runtime.device_selected,
+        on_open_settings=runtime.open_settings,
     )
 
 

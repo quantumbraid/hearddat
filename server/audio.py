@@ -13,6 +13,8 @@ from typing import Dict, Set
 
 import opuslib
 
+from .stats import RuntimeStats
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,16 +88,32 @@ class AudioRouter:
                     pass
             await queue.put(payload)
 
+    async def active_channels(self) -> int:
+        """Return the number of active audio channels."""
 
-async def pump_audio(queue: asyncio.Queue[bytes], websocket) -> None:
+        async with self._lock:
+            return len(self._sources)
+
+
+async def pump_audio(
+    queue: asyncio.Queue[bytes], websocket, stats: RuntimeStats | None = None
+) -> None:
     """Forward queued audio packets to a WebSocket client."""
 
     while True:
         payload = await queue.get()
+        if stats:
+            # Capture outgoing payload size for diagnostics UI.
+            stats.record_egress(len(payload))
         await websocket.send_bytes(payload)
 
 
-async def recv_audio(websocket, router: AudioRouter, channel: str) -> None:
+async def recv_audio(
+    websocket,
+    router: AudioRouter,
+    channel: str,
+    stats: RuntimeStats | None = None,
+) -> None:
     """Receive audio packets and broadcast them to listeners.
 
     The client can optionally send a JSON metadata frame first:
@@ -118,10 +136,16 @@ async def recv_audio(websocket, router: AudioRouter, channel: str) -> None:
         if source_format != target_format:
             codec = OpusCodec(sample_rate=sample_rate, enabled=True)
     elif "bytes" in first_message:
+        if stats:
+            # Capture raw first-frame ingest for metrics.
+            stats.record_ingest(len(first_message["bytes"]))
         await router.broadcast(channel, first_message["bytes"])
 
     while True:
         payload = await websocket.receive_bytes()
+        if stats:
+            # Record each inbound audio frame for run statistics.
+            stats.record_ingest(len(payload))
         if codec and source_format == "pcm" and target_format == "opus":
             payload = codec.encode(payload)
         elif codec and source_format == "opus" and target_format == "pcm":
