@@ -1,5 +1,11 @@
 # Build Plan / TODO
 
+## Current project philosophy (as of now)
+- Prioritize reliable audio streaming between phone ↔ computer, computer → phone,
+  and phone → browser audio before refining individual site integrations.
+- Once core audio streaming is stable, focus on per-site voice workflows and UX
+  details in the browser extensions.
+
 ## Phase 0 — Project setup
 - [x] Create initial README with architecture summary and repository layout.
 - [x] Create this build-plan TODO list with checkboxes.
@@ -29,6 +35,15 @@
 - [x] Implement dual-port listener: port 80 (unsecured) and port 81 (secure/encrypted) for audio streams.
 - [x] Add taskbar icon with right-click menu: start server, stop server, restart server, reconnect to device, devices submenu, restart service after clearing temp files.
 - [x] Implement devices submenu with per-device reauthentication requirement on local LAN when clicked.
+- [ ] Build a Windows installer (preferably an executable) for the PC server.
+- [ ] Ensure the installer fetches/installs dependencies when needed and applicable.
+- [ ] Add installer completion prompts:
+  - [ ] Ask whether the server should start when Windows starts.
+  - [ ] Ask whether to start the server immediately after install.
+- [ ] Add a right-click menu item to open Settings & Diagnostics.
+- [ ] Serve a local Settings & Diagnostics web page populated with run statistics.
+- [ ] Add UI controls to increase/decrease audio quality stream.
+- [ ] Leave a placeholder for future audio encoding style selection (documented as future update).
 
 ## Phase 3 — Android app
 - [ ] Create Android project skeleton with background service permissions.
@@ -40,12 +55,16 @@
 - [ ] Ensure pairing is handled only in-app (camera/QR scan) with no webview/browser usage.
 - [ ] Display first-run guidance about using VPN or proxy if security is a concern (LAN trust assumption).
 - [ ] Implement dual-port stream handling: unsecured port 80 and secure/encrypted port 81.
+- [ ] Add a settings menu for secure vs. unsecure communication selection.
+- [ ] Add an in-app button to unpair the device from the server.
+- [ ] Add a ping button to verify server reachability over Wi-Fi or mobile data.
 
 ## Phase 4 — Browser extensions
 - [ ] Chrome extension scaffold with native messaging/local service bridge.
 - [ ] Firefox extension scaffold with local service bridge.
 - [ ] Implement target-site detection and voice-mode activation hooks.
 - [ ] Implement audio device remap to Android stream.
+- [ ] Hold per-site customizations until audio streaming is stable across phone ↔ PC ↔ browser.
 - [ ] Define per-site voice activation flows and accessibility upgrades for target sites.
   - [x] **chatgpt.com** build decisions:
     - [x] Trigger rule: opening `https://chatgpt.com` should open a new conversation.
