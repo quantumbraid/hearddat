@@ -11,21 +11,32 @@ from .audio import AudioRouter, pump_audio, recv_audio
 from .devices import DeviceHub
 from .local_service import build_router
 from .pairing import PairingRegistry, build_qr_payload
+from .quality import AudioQualityState
+from .stats import RuntimeStats
 
 
 def build_app(
     pairing: PairingRegistry,
     router: AudioRouter,
     device_hub: DeviceHub,
+    stats: RuntimeStats,
+    quality: AudioQualityState,
     host: str,
     http_port: int,
 ) -> FastAPI:
     app = FastAPI(title="HeardDat PC Server")
-    app.include_router(build_router(pairing))
+    app.include_router(build_router(pairing, stats, quality, device_hub, router))
 
     @app.get("/pair", response_class=HTMLResponse)
     async def pairing_page() -> HTMLResponse:
         html = Path("server/AuthPair/index.html").read_text(encoding="utf-8")
+        return HTMLResponse(html)
+
+    @app.get("/settings", response_class=HTMLResponse)
+    async def settings_page() -> HTMLResponse:
+        """Serve the local settings & diagnostics UI."""
+
+        html = Path("server/Settings/index.html").read_text(encoding="utf-8")
         return HTMLResponse(html)
 
     @app.post("/v1/pairing/request")
@@ -63,7 +74,7 @@ def build_app(
         await websocket.accept()
         queue = await router.register(channel)
         try:
-            await pump_audio(queue, websocket)
+            await pump_audio(queue, websocket, stats)
         except WebSocketDisconnect:
             return
         finally:
@@ -73,7 +84,7 @@ def build_app(
     async def audio_ingest(websocket: WebSocket, channel: str) -> None:
         await websocket.accept()
         try:
-            await recv_audio(websocket, router, channel)
+            await recv_audio(websocket, router, channel, stats)
         except WebSocketDisconnect:
             return
 

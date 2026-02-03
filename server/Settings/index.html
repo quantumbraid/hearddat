@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HeardDat Settings & Diagnostics</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      margin: 24px;
+      background: #0e0f12;
+      color: #f5f5f5;
+    }
+    h1, h2 {
+      margin-bottom: 12px;
+    }
+    section {
+      border: 1px solid #2c2f36;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #151720;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .stat {
+      background: #1d2030;
+      padding: 12px;
+      border-radius: 10px;
+    }
+    button {
+      background: #3478f6;
+      border: none;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    button:disabled {
+      background: #3d3f48;
+      cursor: not-allowed;
+    }
+    .muted {
+      color: #b9bcc6;
+      font-size: 0.9rem;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    select {
+      padding: 8px;
+      border-radius: 8px;
+      background: #1d2030;
+      color: #f5f5f5;
+      border: 1px solid #2c2f36;
+    }
+  </style>
+</head>
+<body>
+  <h1>Settings & Diagnostics</h1>
+  <p class="muted">Local-only dashboard for runtime status and quick controls.</p>
+
+  <section>
+    <h2>Run Statistics</h2>
+    <div class="grid" id="statsGrid"></div>
+  </section>
+
+  <section>
+    <h2>Audio Quality</h2>
+    <div class="row">
+      <button id="lowerQuality">Lower quality</button>
+      <button id="higherQuality">Higher quality</button>
+      <div class="stat" id="qualityStatus">Loading...</div>
+    </div>
+    <p class="muted">Changes update the preferred capture profile sent to connected devices.</p>
+  </section>
+
+  <section>
+    <h2>Audio Encoding Style (placeholder)</h2>
+    <p class="muted">Future update: allow selection between speech-optimized, balanced, and studio modes.</p>
+    <select disabled>
+      <option>Speech (future)</option>
+      <option>Balanced (future)</option>
+      <option>Studio (future)</option>
+    </select>
+  </section>
+
+  <script>
+    const statsGrid = document.getElementById("statsGrid");
+    const qualityStatus = document.getElementById("qualityStatus");
+    const lowerQuality = document.getElementById("lowerQuality");
+    const higherQuality = document.getElementById("higherQuality");
+
+    function formatSeconds(seconds) {
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${hrs}h ${mins}m ${secs}s`;
+    }
+
+    function renderStats(status) {
+      // Keep stats layout simple for quick scanning by humans.
+      statsGrid.innerHTML = "";
+      const items = [
+        { label: "Uptime", value: formatSeconds(status.stats.uptime_s) },
+        { label: "Connected devices", value: status.connected_devices },
+        { label: "Active audio channels", value: status.active_channels },
+        { label: "Ingest frames", value: status.stats.ingest_frames },
+        { label: "Egress frames", value: status.stats.egress_frames },
+        { label: "Ingest bytes", value: status.stats.ingest_bytes },
+        { label: "Egress bytes", value: status.stats.egress_bytes },
+      ];
+
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "stat";
+        card.innerHTML = `<strong>${item.label}</strong><div>${item.value}</div>`;
+        statsGrid.appendChild(card);
+      });
+
+      const preset = status.audio_quality.current;
+      qualityStatus.innerHTML = `<strong>${preset.label}</strong><div>${preset.sample_rate} Hz • ${preset.bitrate_kbps} kbps</div>`;
+    }
+
+    async function loadStatus() {
+      const response = await fetch("/v1/settings/status");
+      const status = await response.json();
+      renderStats(status);
+    }
+
+    async function updateQuality(endpoint) {
+      // Trigger the quality change and refresh the UI after.
+      await fetch(endpoint, { method: "POST" });
+      await loadStatus();
+    }
+
+    lowerQuality.addEventListener("click", () => updateQuality("/v1/settings/audio-quality/decrease"));
+    higherQuality.addEventListener("click", () => updateQuality("/v1/settings/audio-quality/increase"));
+
+    loadStatus();
+    setInterval(loadStatus, 5000);
+  </script>
+</body>
+</html>

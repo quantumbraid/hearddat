@@ -20,6 +20,7 @@ class TrayApp:
         on_clear_restart: Callable[[], None],
         list_devices: Callable[[], List[str]],
         on_device_select: Callable[[str], None],
+        on_open_settings: Callable[[], None],
     ) -> None:
         self._on_start = on_start
         self._on_stop = on_stop
@@ -28,6 +29,7 @@ class TrayApp:
         self._on_clear_restart = on_clear_restart
         self._list_devices = list_devices
         self._on_device_select = on_device_select
+        self._on_open_settings = on_open_settings
         self._icon = None
         self._thread: threading.Thread | None = None
 
@@ -66,6 +68,10 @@ class TrayApp:
             pystray.MenuItem("Reconnect to device", lambda _: self._on_reconnect()),
             pystray.MenuItem(
                 "Devices", pystray.Menu(*device_items()),
+            ),
+            pystray.MenuItem(
+                "Settings & Diagnostics",
+                lambda _: self._on_open_settings(),
             ),
             pystray.MenuItem(
                 "Restart service (clear temp)",
