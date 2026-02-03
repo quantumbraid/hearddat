@@ -43,17 +43,43 @@ def build_app(
     async def request_pairing() -> Dict[str, object]:
         token = pairing.issue_token()
         payload = build_qr_payload(host, http_port, token)
-        return {"token": token.token, "payload": payload}
+        return {"token": token.token, "payload": payload, "pin": token.pin}
 
     @app.post("/v1/pairing/confirm")
     async def confirm_pairing(request: Request) -> Dict[str, str]:
         body = await request.json()
         device_id = body.get("device_id")
         token = body.get("token")
-        if not device_id or not token:
-            raise HTTPException(status_code=400, detail="device_id and token required")
-        pairing.confirm_device(device_id=device_id, token=token, ip=request.client.host)
-        return {"status": "paired"}
+        pin = body.get("pin")
+        rgb = body.get("rgb_deltas") or {}
+        r = rgb.get("r", body.get("r"))
+        g = rgb.get("g", body.get("g"))
+        b = rgb.get("b", body.get("b"))
+        if (
+            device_id is None
+            or token is None
+            or pin is None
+            or r is None
+            or g is None
+            or b is None
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="device_id, token, pin, and rgb_deltas (r,g,b) are required",
+            )
+        try:
+            seed = pairing.confirm_device(
+                device_id=str(device_id),
+                token=str(token),
+                pin=str(pin),
+                r=int(r),
+                g=int(g),
+                b=int(b),
+                ip=request.client.host,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"status": "paired", "seed": str(seed)}
 
     @app.websocket("/ws/device/{device_id}")
     async def device_ws(websocket: WebSocket, device_id: str) -> None:

@@ -1,3 +1,15 @@
 /book/
 __pycache__/
 *.pyc
+.pytest_cache/
+/.venv/
+
+# Local runtime state (do not commit pairing registries or per-install keys)
+/server/data/
+/server/certs/*.pem
+/server/certs/*.key
+/server/certs/*.crt
+
+# Common build outputs
+/dist/
+/build/

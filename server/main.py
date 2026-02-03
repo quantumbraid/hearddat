@@ -18,6 +18,7 @@ from .pairing import PairingRegistry
 from .quality import AudioQualityState
 from .storage import JsonStore
 from .stats import RuntimeStats
+from .tls import ensure_self_signed_cert
 from .tray import TrayApp
 from .web import build_app
 
@@ -126,13 +127,24 @@ class ServerRuntime:
             args=(app, self.config.http_port, False),
             daemon=True,
         )
-        self._https_thread = threading.Thread(
-            target=self._run_uvicorn,
-            args=(app, self.config.https_port, True),
-            daemon=True,
-        )
         self._http_thread.start()
-        self._https_thread.start()
+        if ensure_self_signed_cert(
+            self.config.cert_file,
+            self.config.key_file,
+            common_name="hearddat",
+        ):
+            self._https_thread = threading.Thread(
+                target=self._run_uvicorn,
+                args=(app, self.config.https_port, True),
+                daemon=True,
+            )
+            self._https_thread.start()
+        else:
+            logger.warning(
+                "TLS listener not started (missing cert/key at %s and %s).",
+                self.config.cert_file,
+                self.config.key_file,
+            )
 
     def _run_uvicorn(self, app, port: int, use_tls: bool) -> None:
         config = uvicorn.Config(

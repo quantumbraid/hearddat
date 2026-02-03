@@ -18,8 +18,8 @@ class ServerConfig:
     http_port: int = 80
     https_port: int = 81
     data_dir: Path = Path("server/data")
-    cert_file: Path = Path("server/certs/dev_cert.pem")
-    key_file: Path = Path("server/certs/dev_key.pem")
+    cert_file: Path = Path("server/certs/hearddat_cert.pem")
+    key_file: Path = Path("server/certs/hearddat_key.pem")
     ip_check_interval_s: int = 60 * 60
 
     @staticmethod
@@ -32,9 +32,11 @@ class ServerConfig:
             https_port=int(os.getenv("HEARDDAT_HTTPS_PORT", "81")),
             data_dir=Path(os.getenv("HEARDDAT_DATA_DIR", "server/data")),
             cert_file=Path(
-                os.getenv("HEARDDAT_CERT_FILE", "server/certs/dev_cert.pem")
+                os.getenv("HEARDDAT_CERT_FILE", "server/certs/hearddat_cert.pem")
             ),
-            key_file=Path(os.getenv("HEARDDAT_KEY_FILE", "server/certs/dev_key.pem")),
+            key_file=Path(
+                os.getenv("HEARDDAT_KEY_FILE", "server/certs/hearddat_key.pem")
+            ),
             ip_check_interval_s=int(
                 os.getenv("HEARDDAT_IP_CHECK_INTERVAL", str(60 * 60))
             ),

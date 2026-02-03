@@ -1,0 +1,70 @@
+# HeardDat Review Findings (as of 2026-02-03)
+
+## Summary
+This file captures the current findings, unresolved decisions, and a brief future-work plan. It reflects the latest project intent updates:
+- Pairing is long-lived and revocable from client and server.
+- Default posture: no app-managed key exchange (no custom encryption keys exchanged); the pairing seed is a long-lived credential exchanged only during in-LAN pairing confirm.
+- Audio is allowed over any network after an initial in-network pairing.
+- Ports 80/81 were temporary and should be adjustable.
+- Add UPnP support so Android can connect more easily.
+ - TLS cert/key material should be generated per-install (not committed to the repo).
+
+## Findings
+### Critical
+- `/v1/settings/status` will raise `AttributeError` because `build_router` overwrites the `AudioRouter` parameter with an `APIRouter`, then calls `router.active_channels()`.
+  - File: `server/local_service.py`
+  - Impact: Settings & Diagnostics page breaks.
+
+### High
+- Tray start/stop/restart do not control HTTP/TLS servers. `stop()` doesn’t stop uvicorn, and `restart()` spawns new servers on the same ports, likely failing or leaking threads.
+  - File: `server/main.py`
+  - Impact: Tray controls are misleading and unsafe.
+
+- Tray actions call `asyncio.run(...)` to interact with WebSocket connections created in a different event loop. This can throw “attached to a different loop” or fail at runtime.
+  - File: `server/main.py`
+  - Impact: Device notifications may fail.
+
+### Medium
+- Opus frame size is hard-coded to 320 samples regardless of sample rate. The 24 kHz option is likely invalid (20 ms at 24 kHz should be 480 samples).
+  - File: `server/audio.py`
+  - Impact: Audio distortion or runtime errors at 24 kHz.
+
+- `/pair` and `/settings` load static HTML via relative paths, which can fail if the app is started from a different CWD or packaged.
+  - File: `server/web.py`
+  - Impact: Pairing and settings UI may be unavailable.
+
+- Discovery and IP monitor stop routines never reset `_thread` or `_stop_event`, so a stop/start cycle won’t restart those services.
+  - Files: `server/discovery.py`, `server/ip_monitor.py`
+  - Impact: Restart behavior does not work reliably.
+
+- Audio WebSocket endpoints have no authentication gate. This is currently inconsistent with “audio only after in-network pairing.”
+  - File: `server/web.py`
+  - Impact: Potential unauthorized audio access on open network.
+
+### Low
+- “Restart service (clear temp)” does not clear temp files.
+  - File: `server/main.py`
+
+- Opus dependency is imported at module load, so PCM-only mode fails if `opuslib` is missing.
+  - File: `server/audio.py`
+
+## Open Decisions / Unfinished Intent
+- Revocation/unpair: define how revocation should work and how it’s surfaced (device record deletion, token invalidation list, UI/UX flows on both PC and Android).
+- Audio access policy: must require in-network pairing before audio on any network. Need to define how the server verifies “paired” vs “unauthenticated” for `/ws/audio/*`.
+- Port selection: 80/81 are temporary. Decide defaults and allow configuration, including UX for users who lack permission to bind privileged ports.
+- UPnP: add to the server spec and implementation for NAT traversal and easier Android connectivity post-pairing.
+- RGB delta spec: define how Android computes `rgb_deltas` (sampling method and sign convention for black/white diff) so it is stable across devices.
+
+## Future Codex Job: How to Address
+- Fix `server/local_service.py` by renaming variables to avoid shadowing and add a unit test for `/v1/settings/status`.
+- Implement a controlled server lifecycle: keep `uvicorn.Server` references, support graceful shutdown, and wire tray controls to lifecycle actions.
+- Replace `asyncio.run(...)` with cross-thread safe scheduling on the running event loop (e.g., `loop.call_soon_threadsafe` + `asyncio.create_task`).
+- Update pairing model: explicit revocation endpoint(s), enforce “paired” state for audio endpoints, and ensure Android implements the `rgb_deltas` capture + confirm flow per `shared/protocol.md`.
+- Make Opus frame size dependent on sample rate (e.g., 20 ms frames: `frame_size = sample_rate // 50`).
+- Serve static HTML using absolute paths based on module location (e.g., `Path(__file__).resolve().parent / 'AuthPair' / 'index.html'`).
+- Reset thread state on stop for discovery and IP monitor so restarts are reliable.
+- Add UPnP configuration flow (spec + implementation) and surface any port mapping failures in Settings & Diagnostics.
+
+## Tests Status
+- Tests were not run due to missing `python` and `pytest` in the environment.
+- Current tests exist for pairing and storage but not for server lifecycle, settings status, or audio routing.
