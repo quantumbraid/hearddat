@@ -35,11 +35,11 @@
   - Audio allowed on any network *after* in-LAN pairing
   - Ports are configurable (80/81 were temporary)
   - UPnP support for reachability (optional)
-- [ ] Define the connectivity/reachability story post-pairing: same LAN vs VPN vs manual port-forward vs UPnP (and what happens when UPnP fails).
-- [ ] Define re-pair policy: re-pairing/re-issuing the seed is LAN-only.
-- [ ] Define manual port fallback UX: when UPnP is unavailable, server displays a 4-digit PIN that must be entered on Android.
+- [x] Define the connectivity/reachability story post-pairing: same LAN vs VPN vs manual port-forward vs UPnP (and what happens when UPnP fails).
+- [x] Define re-pair policy: re-pairing/re-issuing the seed is LAN-only.
+- [x] Define manual port fallback UX: when UPnP is unavailable, server displays a 4-digit PIN that must be entered on Android.
 - [ ] Define how “paired” is enforced for audio endpoints (policy statement, not implementation): who can publish/consume which channels, and how extensions authenticate to the local service.
-- [ ] Define the paired command scope: which remote admin actions are allowed (restart, browser open, hotkeys, extension DOM class triggers).
+- [x] Define the paired command scope: which remote admin actions are allowed (restart, browser open, hotkeys, extension DOM class triggers).
 
 ## Phase 2 — PC server (desktop)
 - [x] Choose runtime/stack and create server skeleton (HTTP + WebSocket + discovery). FastAPI + Uvicorn with UDP discovery responder.
@@ -64,18 +64,18 @@
 - [x] Leave a placeholder for future audio encoding style selection (documented as future update).
 
 ### Phase 2a — Prototype alignment & polish (from `sos.txt`)
-- [x] Fix Settings API wiring so `/v1/settings/status` works end-to-end (currently broken due to a name collision/shadowing bug).
-- [x] Make tray Start/Stop/Restart actually control the server lifecycle (no orphaned server threads; stop should stop the listeners).
-- [x] Make device notifications safe from the tray thread (avoid cross-event-loop WebSocket usage).
-- [x] Enforce “paired first” for audio on any network: audio WebSockets must require a paired device credential (policy/implementation alignment).
+- [ ] Fix Settings API wiring so `/v1/settings/status` works end-to-end (currently broken due to a name collision/shadowing bug).
+- [ ] Make tray Start/Stop/Restart actually control the server lifecycle (no orphaned server threads; stop should stop the listeners).
+- [ ] Make device notifications safe from the tray thread (avoid cross-event-loop WebSocket usage).
+- [ ] Enforce “paired first” for audio on any network: audio WebSockets must require a paired device credential (policy/implementation alignment).
 - [ ] Make ports configurable beyond env vars: decide and document defaults; ensure Settings & Diagnostics surfaces current ports.
 - [ ] Add UPnP (optional) to map ports for reachability, and expose mapping status + errors in Settings & Diagnostics.
 - [ ] Implement manual port fallback UI: show the active port + 4-digit PIN to enter on Android when UPnP is unavailable.
-- [x] Update the pairing UI to display an actual black/white QR code (and optional calibration swatches) so Android can compute stable `rgb_deltas` from the scan.
-- [x] Make the pairing UI/assets robust to different working directories and packaging (static file paths should be reliable).
-- [x] Ensure discovery + IP monitor can be stopped/started cleanly (restart should actually restart those subsystems).
-- [x] Implement real “Restart service (clear temp)” behavior or rename it to match what it does.
-- [x] Update docs to match reality after the above changes: `README.md`, `shared/protocol.md`, and `sos.txt`.
+- [ ] Update the pairing UI to display an actual black/white QR code (and optional calibration swatches) so Android can compute stable `rgb_deltas` from the scan.
+- [ ] Make the pairing UI/assets robust to different working directories and packaging (static file paths should be reliable).
+- [ ] Ensure discovery + IP monitor can be stopped/started cleanly (restart should actually restart those subsystems).
+- [ ] Implement real “Restart service (clear temp)” behavior or rename it to match what it does.
+- [ ] Update docs to match reality after the above changes: `README.md`, `shared/protocol.md`, and `sos.txt`.
 
 ## Phase 3 — Android app
 - [ ] Create Android project skeleton with background service permissions.
