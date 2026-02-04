@@ -11,7 +11,10 @@ import logging
 import json
 from typing import Dict, Set
 
-import opuslib
+try:
+    import opuslib
+except ImportError:  # pragma: no cover - optional dependency for PCM-only mode
+    opuslib = None
 
 from .stats import RuntimeStats
 
@@ -29,26 +32,29 @@ class OpusCodec:
     ) -> None:
         self.sample_rate = sample_rate
         self.channels = channels
-        self._enabled = enabled
+        self._enabled = enabled and opuslib is not None
         self._encoder = None
         self._decoder = None
-        if enabled:
-            self._encoder = opuslib.Encoder(sample_rate, channels, opuslib.APPLICATION_AUDIO)
+        self._frame_size = max(1, sample_rate // 50)
+        if self._enabled:
+            self._encoder = opuslib.Encoder(
+                sample_rate, channels, opuslib.APPLICATION_AUDIO
+            )
             self._decoder = opuslib.Decoder(sample_rate, channels)
 
     @property
     def enabled(self) -> bool:
         return self._enabled
 
-    def encode(self, pcm: bytes, frame_size: int = 320) -> bytes:
+    def encode(self, pcm: bytes, frame_size: int | None = None) -> bytes:
         if not self._enabled:
             return pcm
-        return self._encoder.encode(pcm, frame_size)
+        return self._encoder.encode(pcm, frame_size or self._frame_size)
 
-    def decode(self, payload: bytes, frame_size: int = 320) -> bytes:
+    def decode(self, payload: bytes, frame_size: int | None = None) -> bytes:
         if not self._enabled:
             return payload
-        return self._decoder.decode(payload, frame_size)
+        return self._decoder.decode(payload, frame_size or self._frame_size)
 
 
 class AudioRouter:
@@ -133,8 +139,10 @@ async def recv_audio(
         source_format = metadata.get("format", "pcm")
         target_format = metadata.get("target_format", source_format)
         sample_rate = int(metadata.get("sample_rate", 16000))
-        if source_format != target_format:
+        if source_format != target_format and opuslib is not None:
             codec = OpusCodec(sample_rate=sample_rate, enabled=True)
+        elif source_format != target_format and opuslib is None:
+            logger.warning("Opus support unavailable; skipping transcode")
     elif "bytes" in first_message:
         if stats:
             # Capture raw first-frame ingest for metrics.

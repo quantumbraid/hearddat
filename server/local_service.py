@@ -17,7 +17,10 @@ def build_router(
     stats: RuntimeStats,
     quality: AudioQualityState,
     device_hub: DeviceHub,
-    router: AudioRouter,
+    audio_router: AudioRouter,
+    host: str,
+    http_port: int,
+    https_port: int,
 ) -> APIRouter:
     """Expose a minimal API for extension integration."""
 
@@ -42,7 +45,12 @@ def build_router(
             "stats": snapshot.as_dict(),
             "audio_quality": quality.snapshot(),
             "connected_devices": await device_hub.count(),
-            "active_channels": await router.active_channels(),
+            "active_channels": await audio_router.active_channels(),
+            "config": {
+                "host": host,
+                "http_port": http_port,
+                "https_port": https_port,
+            },
         }
 
     @router.post("/settings/audio-quality/increase")

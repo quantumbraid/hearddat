@@ -29,6 +29,8 @@ class DiscoveryResponder:
             return
         self._stop_event.set()
         self._thread.join(timeout=2)
+        self._thread = None
+        self._stop_event = threading.Event()
 
     def _run(self) -> None:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:

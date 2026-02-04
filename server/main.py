@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import shutil
 import threading
 import time
 
@@ -39,10 +40,21 @@ class ServerRuntime:
         self._quality = AudioQualityState()
         self._http_thread: threading.Thread | None = None
         self._https_thread: threading.Thread | None = None
+        self._http_server: uvicorn.Server | None = None
+        self._https_server: uvicorn.Server | None = None
+        self._http_loop: asyncio.AbstractEventLoop | None = None
+        self._https_loop: asyncio.AbstractEventLoop | None = None
+        self._running = False
+        self._server_lock = threading.Lock()
         self._discovery: DiscoveryResponder | None = None
         self._ip_monitor: IPMonitor | None = None
 
     def start(self) -> None:
+        with self._server_lock:
+            if self._running:
+                logger.info("Server already running; ignoring start request")
+                return
+            self._running = True
         logger.info("Starting HeardDat server")
         app = build_app(
             self._pairing,
@@ -52,6 +64,7 @@ class ServerRuntime:
             self._quality,
             self.config.host,
             self.config.http_port,
+            self.config.https_port,
         )
         self._start_server(app)
         self._start_discovery()
@@ -61,8 +74,13 @@ class ServerRuntime:
         logger.info("Stopping HeardDat server")
         if self._discovery:
             self._discovery.stop()
+            self._discovery = None
         if self._ip_monitor:
             self._ip_monitor.stop()
+            self._ip_monitor = None
+        self._stop_server()
+        with self._server_lock:
+            self._running = False
 
     def restart(self) -> None:
         self.stop()
@@ -70,14 +88,17 @@ class ServerRuntime:
 
     def reconnect_device(self) -> None:
         logger.info("Reconnect requested - devices must reauthenticate on LAN")
-        asyncio.run(
-            self._device_hub.notify_all(
-                {"type": "reauth_required", "reason": "user_initiated"}
-            )
+        self._device_hub.notify_all_threadsafe(
+            {"type": "reauth_required", "reason": "user_initiated"}
         )
 
     def clear_and_restart(self) -> None:
         logger.info("Restart requested with temp cleanup")
+        temp_dir = self.config.data_dir / "temp"
+        cache_dir = self.config.data_dir / "cache"
+        for target in (temp_dir, cache_dir):
+            if target.exists():
+                shutil.rmtree(target, ignore_errors=True)
         self.restart()
 
     def list_devices(self) -> list[str]:
@@ -85,10 +106,8 @@ class ServerRuntime:
 
     def device_selected(self, device_id: str) -> None:
         logger.info("Device selected for reauth: %s", device_id)
-        asyncio.run(
-            self._device_hub.notify_device(
-                device_id, {"type": "reauth_required", "reason": "user_selected"}
-            )
+        self._device_hub.notify_device_threadsafe(
+            device_id, {"type": "reauth_required", "reason": "user_selected"}
         )
 
     def open_settings(self) -> None:
@@ -112,10 +131,8 @@ class ServerRuntime:
     def _start_ip_monitor(self) -> None:
         def handle_change(new_ip: str) -> None:
             logger.info("IP change detected: %s", new_ip)
-            asyncio.run(
-                self._device_hub.notify_all(
-                    {"type": "ip_change", "ip": new_ip, "reason": "monitor"}
-                )
+            self._device_hub.notify_all_threadsafe(
+                {"type": "ip_change", "ip": new_ip, "reason": "monitor"}
             )
 
         self._ip_monitor = IPMonitor(self.config.ip_check_interval_s, handle_change)
@@ -147,6 +164,8 @@ class ServerRuntime:
             )
 
     def _run_uvicorn(self, app, port: int, use_tls: bool) -> None:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         config = uvicorn.Config(
             app,
             host=self.config.host,
@@ -156,7 +175,34 @@ class ServerRuntime:
             ssl_keyfile=str(self.config.key_file) if use_tls else None,
         )
         server = uvicorn.Server(config)
-        asyncio.run(server.serve())
+        if use_tls:
+            self._https_server = server
+            self._https_loop = loop
+        else:
+            self._http_server = server
+            self._http_loop = loop
+        loop.run_until_complete(server.serve())
+        loop.close()
+
+    def _stop_server(self) -> None:
+        for server, loop in (
+            (self._http_server, self._http_loop),
+            (self._https_server, self._https_loop),
+        ):
+            if server:
+                server.should_exit = True
+            if loop:
+                loop.call_soon_threadsafe(lambda: None)
+        if self._http_thread:
+            self._http_thread.join(timeout=3)
+        if self._https_thread:
+            self._https_thread.join(timeout=3)
+        self._http_thread = None
+        self._https_thread = None
+        self._http_server = None
+        self._https_server = None
+        self._http_loop = None
+        self._https_loop = None
 
 
 def build_tray(runtime: ServerRuntime) -> TrayApp:

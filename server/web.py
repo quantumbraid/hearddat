@@ -1,11 +1,14 @@
 """FastAPI application wiring for HeardDat server."""
 from __future__ import annotations
 
+from io import BytesIO
+import json
 from pathlib import Path
 from typing import Dict
 
+import qrcode
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from .audio import AudioRouter, pump_audio, recv_audio
 from .devices import DeviceHub
@@ -23,20 +26,25 @@ def build_app(
     quality: AudioQualityState,
     host: str,
     http_port: int,
+    https_port: int,
 ) -> FastAPI:
     app = FastAPI(title="HeardDat PC Server")
-    app.include_router(build_router(pairing, stats, quality, device_hub, router))
+    app.include_router(
+        build_router(pairing, stats, quality, device_hub, router, host, http_port, https_port)
+    )
+
+    base_dir = Path(__file__).resolve().parent
 
     @app.get("/pair", response_class=HTMLResponse)
     async def pairing_page() -> HTMLResponse:
-        html = Path("server/AuthPair/index.html").read_text(encoding="utf-8")
+        html = (base_dir / "AuthPair" / "index.html").read_text(encoding="utf-8")
         return HTMLResponse(html)
 
     @app.get("/settings", response_class=HTMLResponse)
     async def settings_page() -> HTMLResponse:
         """Serve the local settings & diagnostics UI."""
 
-        html = Path("server/Settings/index.html").read_text(encoding="utf-8")
+        html = (base_dir / "Settings" / "index.html").read_text(encoding="utf-8")
         return HTMLResponse(html)
 
     @app.post("/v1/pairing/request")
@@ -44,6 +52,18 @@ def build_app(
         token = pairing.issue_token()
         payload = build_qr_payload(host, http_port, token)
         return {"token": token.token, "payload": payload, "pin": token.pin}
+
+    @app.get("/v1/pairing/qrcode")
+    async def pairing_qrcode(token: str) -> Response:
+        record = pairing.get_token(token)
+        if not record:
+            raise HTTPException(status_code=404, detail="Pairing token not found")
+        payload = build_qr_payload(host, http_port, record)
+        qr_data = json.dumps(payload, separators=(",", ":"), sort_keys=True)
+        img = qrcode.make(qr_data)
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        return Response(content=buf.getvalue(), media_type="image/png")
 
     @app.post("/v1/pairing/confirm")
     async def confirm_pairing(request: Request) -> Dict[str, str]:
@@ -97,6 +117,11 @@ def build_app(
 
     @app.websocket("/ws/audio/{channel}")
     async def audio_ws(websocket: WebSocket, channel: str) -> None:
+        device_id = websocket.query_params.get("device_id")
+        token = websocket.query_params.get("token")
+        if not device_id or not token or not pairing.validate_device(device_id, token):
+            await websocket.close(code=1008)
+            return
         await websocket.accept()
         queue = await router.register(channel)
         try:
@@ -108,6 +133,11 @@ def build_app(
 
     @app.websocket("/ws/audio/{channel}/ingest")
     async def audio_ingest(websocket: WebSocket, channel: str) -> None:
+        device_id = websocket.query_params.get("device_id")
+        token = websocket.query_params.get("token")
+        if not device_id or not token or not pairing.validate_device(device_id, token):
+            await websocket.close(code=1008)
+            return
         await websocket.accept()
         try:
             await recv_audio(websocket, router, channel, stats)

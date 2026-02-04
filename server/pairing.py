@@ -109,6 +109,23 @@ class PairingRegistry:
             pin=pin,
         )
 
+    def get_token(self, token: str) -> PairingToken | None:
+        payload = self._load()
+        record = payload.get("tokens", {}).get(token)
+        if not record:
+            return None
+        issued_at = datetime.fromisoformat(record["issued_at"])
+        expires_at = datetime.fromisoformat(record["expires_at"])
+        if datetime.now(timezone.utc) >= expires_at:
+            return None
+        pin = str(record.get("pin", "")).zfill(4)
+        return PairingToken(
+            token=token,
+            issued_at=issued_at,
+            expires_at=expires_at,
+            pin=pin,
+        )
+
     def confirm_device(
         self,
         device_id: str,

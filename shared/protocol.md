@@ -10,6 +10,9 @@ reachable).
 HeardDat's default posture is **no custom key exchange**: pairing establishes an
 auth relationship (seed/token), not an app-managed encryption key.
 
+**Re-pairing is LAN-only:** any re-issue of a pairing seed must occur with both
+devices on the same local network.
+
 ### QR payload format
 
 ```json
@@ -51,6 +54,15 @@ auth relationship (seed/token), not an app-managed encryption key.
 - The 4-digit PIN is derived from the bootstrap token + timestamp. If a PIN is
   entered incorrectly, pairing attempts are blocked for 10 minutes (or until the
   server restarts).
+
+### Manual port fallback (Phase 1)
+
+If UPnP is unavailable, the server will present:
+- The active port to reach the PC server, and
+- A 4-digit PIN that must be entered on Android during pairing.
+
+This PIN is **not** embedded in the QR payload; it is delivered out-of-band by
+the pairing UI and the `/v1/pairing/request` response.
 
 ### Pairing seed derivation (Phase 1)
 
@@ -110,8 +122,8 @@ only after an initial in-LAN pairing bootstrap.
 
 ### Endpoints
 
-- **Ingest:** `/ws/audio/<channel>/ingest`
-- **Consume:** `/ws/audio/<channel>`
+- **Ingest:** `/ws/audio/<channel>/ingest?device_id=...&token=<seed>`
+- **Consume:** `/ws/audio/<channel>?device_id=...&token=<seed>`
 
 ### Payloads
 

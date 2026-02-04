@@ -17,10 +17,59 @@
         padding: 1.5rem;
         max-width: 560px;
       }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin: 1rem 0;
+        align-items: flex-start;
+      }
+      .qr {
+        background: #ffffff;
+        padding: 0.75rem;
+        border-radius: 12px;
+        display: inline-block;
+      }
+      .qr img {
+        width: 200px;
+        height: 200px;
+        image-rendering: pixelated;
+      }
+      .pin {
+        min-width: 200px;
+      }
+      .pin-box {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: 0.3rem;
+        background: #1f1f1f;
+        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        display: inline-block;
+      }
+      pre {
+        background: #1f1f1f;
+        padding: 0.75rem;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
       code {
         background: #1f1f1f;
         padding: 0.2rem 0.4rem;
         border-radius: 6px;
+      }
+      button {
+        margin-top: 0.75rem;
+        background: #3478f6;
+        color: #fff;
+        border: none;
+        padding: 0.6rem 0.9rem;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .muted {
+        color: #b9bcc6;
+        font-size: 0.9rem;
       }
     </style>
   </head>
@@ -36,10 +85,49 @@
         The pairing token is short-lived, and the app is the only way to
         complete the handshake.
       </p>
-      <p>
-        The PC server will expose two ports for audio streams:
-        <code>80</code> (unsecured) and <code>81</code> (encrypted).
-      </p>
+      <div class="row">
+        <div>
+          <h2>QR Code</h2>
+          <div class="qr">
+            <img id="qrImage" alt="Pairing QR code" />
+          </div>
+        </div>
+        <div class="pin">
+          <h2>Manual PIN</h2>
+          <div class="pin-box" id="pinValue">Loading...</div>
+          <p class="muted">
+            If UPnP is unavailable, enter this 4-digit PIN in the Android app.
+          </p>
+          <p class="muted" id="serverAddress">Server: --</p>
+          <p class="muted">
+            Ports are configurable. The server will report its current port in
+            Settings & Diagnostics.
+          </p>
+        </div>
+      </div>
+      <h2>QR Payload (debug)</h2>
+      <pre id="payload">Loading...</pre>
+      <button id="refresh">Refresh QR</button>
     </div>
+    <script>
+      const qrImage = document.getElementById("qrImage");
+      const pinValue = document.getElementById("pinValue");
+      const payloadEl = document.getElementById("payload");
+      const serverAddress = document.getElementById("serverAddress");
+      const refreshBtn = document.getElementById("refresh");
+
+      async function loadPairing() {
+        const response = await fetch("/v1/pairing/request", { method: "POST" });
+        const data = await response.json();
+        pinValue.textContent = data.pin || "----";
+        payloadEl.textContent = JSON.stringify(data.payload, null, 2);
+        serverAddress.textContent = `Server: ${data.payload?.server || "--"}`;
+        const token = encodeURIComponent(data.token);
+        qrImage.src = `/v1/pairing/qrcode?token=${token}`;
+      }
+
+      refreshBtn.addEventListener("click", loadPairing);
+      loadPairing();
+    </script>
   </body>
 </html>

@@ -108,10 +108,14 @@
     function renderStats(status) {
       // Keep stats layout simple for quick scanning by humans.
       statsGrid.innerHTML = "";
+      const config = status.config || {};
       const items = [
         { label: "Uptime", value: formatSeconds(status.stats.uptime_s) },
         { label: "Connected devices", value: status.connected_devices },
         { label: "Active audio channels", value: status.active_channels },
+        { label: "Host", value: config.host || "unknown" },
+        { label: "HTTP port", value: config.http_port ?? "unknown" },
+        { label: "HTTPS port", value: config.https_port ?? "unknown" },
         { label: "Ingest frames", value: status.stats.ingest_frames },
         { label: "Egress frames", value: status.stats.egress_frames },
         { label: "Ingest bytes", value: status.stats.ingest_bytes },

@@ -93,12 +93,12 @@ Environment variables (see `server/config.py`):
 ### Key endpoints
 
 - `GET /pair` — LAN-only pairing page.
-- `POST /v1/pairing/request` — generate a short-lived pairing bootstrap token + payload for QR.
+- `POST /v1/pairing/request` — generate a short-lived pairing bootstrap token + payload for QR, plus a 4-digit PIN for manual fallback.
 - `POST /v1/pairing/confirm` — confirm pairing bootstrap, submit scan-time RGB deltas, and receive the long-lived pairing seed.
 - `GET /v1/health` — extension health check.
 - `GET /v1/devices` — list paired devices.
-- `WS /ws/audio/<channel>/ingest` — ingest audio.
-- `WS /ws/audio/<channel>` — consume audio.
+- `WS /ws/audio/<channel>/ingest?device_id=...&token=<seed>` — ingest audio.
+- `WS /ws/audio/<channel>?device_id=...&token=<seed>` — consume audio.
 - `WS /ws/device/<device_id>?token=...` — device notification channel.
 
 See [`shared/protocol.md`](./shared/protocol.md) for baseline protocol details
